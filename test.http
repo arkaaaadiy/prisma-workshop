@@ -34,4 +34,12 @@ GET http://localhost:3000/user/3/drafts
 
 ###
 
-GET http://localhost:3000/feed
+GET http://localhost:3000/user/1/posts
+
+###
+
+GET http://localhost:3000/post/4
+
+###
+
+GET http://localhost:3000/feed?searchString=world
