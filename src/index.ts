@@ -41,61 +41,133 @@ scalar DateTime
 
 const resolvers = {
   Query: {
-    allUsers: (_parent, _args, context: Context) => {
-      // TODO
+    allUsers: (_parent, _args, { prisma }: Context) => {
+      return prisma.user.findMany();
     },
-    postById: (_parent, args: { id: number }, context: Context) => {
-      // TODO
+    postById: (_parent, { id }: { id: number }, { prisma }: Context) => {
+      return prisma.post.findUnique({
+        where: {
+          id,
+        },
+      });
     },
     feed: (
       _parent,
-      args: {
+      {
+        searchString,
+        skip,
+        take,
+      }: {
         searchString: string | undefined;
         skip: number | undefined;
         take: number | undefined;
       },
-      context: Context
+      { prisma }: Context
     ) => {
-      // TODO
+      const OR = searchString
+        ? {
+            OR: [
+              { title: { contains: searchString } },
+              { content: { contains: searchString } },
+            ],
+          }
+        : {};
+      return prisma.post.findMany({
+        skip,
+        take,
+        where: {
+          published: true,
+          ...OR,
+        },
+      });
     },
-    draftsByUser: (_parent, args: { id: number }, context: Context) => {
-      // TODO
+    draftsByUser: (_parent, { id }: { id: number }, { prisma }: Context) => {
+      return prisma.user.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          posts: {
+            where: {
+              published: false,
+            },
+          },
+        },
+      });
     },
   },
   Mutation: {
     signupUser: (
       _parent,
-      args: { name: string | undefined; email: string },
-      context: Context
+      { email, name }: { name: string | undefined; email: string },
+      { prisma }: Context
     ) => {
-      // TODO
+      return prisma.user.create({
+        data: {
+          email,
+          name,
+        },
+      });
     },
     createDraft: (
       _parent,
-      args: { title: string; content: string | undefined; authorEmail: string },
-      context: Context
+      {
+        title,
+        content,
+        authorEmail,
+      }: { title: string; content: string | undefined; authorEmail: string },
+      { prisma }: Context
     ) => {
-      // TODO
+      return prisma.post.create({
+        data: {
+          title,
+          content,
+          author: {
+            connect: {
+              email: authorEmail,
+            },
+          },
+        },
+      });
     },
     incrementPostViewCount: (
       _parent,
-      args: { id: number },
-      context: Context
+      { id }: { id: number },
+      { prisma }: Context
     ) => {
-      // TODO
+      return prisma.post.update({
+        where: {
+          id,
+        },
+        data: {
+          viewCount: {
+            increment: 1,
+          },
+        },
+      });
     },
-    deletePost: (_parent, args: { id: number }, context: Context) => {
-      // TODO
+    deletePost: (_parent, { id }: { id: number }, { prisma }: Context) => {
+      return prisma.post.delete({ where: { id } });
     },
   },
   Post: {
-    author: (parent, _args, context: Context) => {
-      return null;
+    author: (parent, _args, { prisma }: Context) => {
+      return prisma.post
+        .findUnique({
+          where: {
+            id: parent.id,
+          },
+        })
+        .author();
     },
   },
   User: {
-    posts: (parent, _args, context: Context) => {
-      return [];
+    posts: (parent, _args, { prisma }: Context) => {
+      return prisma.user
+        .findUnique({
+          where: { id: parent.id },
+        })
+        .posts();
     },
   },
   DateTime: DateTimeResolver,
